@@ -28,14 +28,6 @@ export interface InjectionRule {
   endMonth: number;
 }
 
-export interface CalculationResult {
-  totalInvested: number;
-  totalInterest: number;
-  maturityValue: number;
-  amortization: AmortizationRow[];
-  milestones: Milestone[];
-}
-
 export interface AmortizationRow {
   month: number;
   openingBalance: number;
@@ -50,6 +42,14 @@ export interface Milestone {
   month: number;
   preciseYear: number;
   ruleOf72?: string;
+}
+
+export interface CalculationResult {
+  totalInvested: number;
+  totalInterest: number;
+  maturityValue: number;
+  amortization: AmortizationRow[];
+  milestones: Milestone[];
 }
 
 export interface AppState {
@@ -75,3 +75,19 @@ export interface Scenario {
   result: CalculationResult;
   timestamp: number;
 }
+
+export enum UserRole {
+  ADMIN = 'ADMIN',
+  USER = 'USER'
+}
+
+export interface User {
+  id: string;
+  email: string;
+  password?: string;
+  role: UserRole;
+  scenarios: Scenario[];
+  createdAt: number;
+}
+
+export type AuthView = 'LOGIN' | 'SIGNUP' | 'FORGOT';
