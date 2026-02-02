@@ -22,21 +22,21 @@ export const calculateFinance = (state: AppState): CalculationResult => {
   let totalInvested = principal;
   let totalInterest = 0;
 
-  // Standard Amortization / Growth Loop
   for (let m = 1; m <= totalMonths; m++) {
     const openingBalance = currentBalance;
     
-    // Add periodic contributions or subtract EMI
+    // 1. Calculate Base Contribution (SIP or EMI)
     let baseContribution = 0;
     if (investmentType === InvestmentType.SIP || investmentType === InvestmentType.LUMPSUM_SIP) {
       baseContribution = monthlyContribution;
     } else if (investmentType === InvestmentType.LOAN_STANDARD || investmentType === InvestmentType.LOAN_PREPAYMENT) {
-      // Calculate Standard EMI: P * r * (1+r)^n / ((1+r)^n - 1)
       const emi = (principal * monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) / (Math.pow(1 + monthlyRate, totalMonths) - 1);
       baseContribution = -emi; 
+    } else if (investmentType === InvestmentType.IRREGULAR_ONLY) {
+      baseContribution = 0; // Transparently zero out SIP
     }
 
-    // Process all active injection rules for this month
+    // 2. Calculate Rule Contribution (Strategic Injections)
     let ruleContribution = 0;
     for (const rule of injectionRules) {
       if (m >= rule.startMonth && m <= rule.endMonth) {
@@ -46,7 +46,7 @@ export const calculateFinance = (state: AppState): CalculationResult => {
 
     const totalContribution = baseContribution + ruleContribution;
 
-    // Investment logic (Interest grows balance)
+    // 3. Investment logic
     let interestAccrued = 0;
     if (investmentType === InvestmentType.SIMPLE) {
       interestAccrued = principal * monthlyRate;
@@ -54,12 +54,9 @@ export const calculateFinance = (state: AppState): CalculationResult => {
       interestAccrued = currentBalance * monthlyRate;
     }
 
-    // Summary logic
     currentBalance = openingBalance + totalContribution + interestAccrued;
     totalInterest += interestAccrued;
 
-    // Track total invested (only count positive contributions as "investments")
-    // If it's a loan, we treat it differently but for the sake of simplicity in display:
     if (totalContribution > 0) {
       totalInvested += totalContribution;
     }
@@ -67,6 +64,8 @@ export const calculateFinance = (state: AppState): CalculationResult => {
     amortization.push({
       month: m,
       openingBalance,
+      baseContribution,
+      ruleContribution,
       contribution: totalContribution,
       interest: interestAccrued,
       closingBalance: Math.max(0, currentBalance),
@@ -76,7 +75,6 @@ export const calculateFinance = (state: AppState): CalculationResult => {
     if (currentBalance <= 0 && (investmentType === InvestmentType.LOAN_STANDARD || investmentType === InvestmentType.LOAN_PREPAYMENT)) break;
   }
 
-  // Milestones (Goal Seeker)
   const milestones: Milestone[] = [];
   const multiples = [2, 3, 5];
   multiples.forEach(mult => {

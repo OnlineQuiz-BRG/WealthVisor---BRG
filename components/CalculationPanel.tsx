@@ -23,6 +23,20 @@ const CalculationPanel: React.FC<Props> = ({ state, setState, onSaveScenario, on
     setState(prev => ({ ...prev, [key]: value }));
   };
 
+  const handleModeChange = (mode: CalculatorMode) => {
+    let defaultType = InvestmentType.SIP;
+    if (mode === CalculatorMode.BASIC_SAVINGS) defaultType = InvestmentType.COMPOUND;
+    if (mode === CalculatorMode.LOAN_MANAGEMENT) defaultType = InvestmentType.LOAN_STANDARD;
+    
+    setState(prev => ({ 
+      ...prev, 
+      mode, 
+      investmentType: defaultType,
+      // Retain injections across modes to allow strategic planning in all views
+      injectionRules: prev.injectionRules
+    }));
+  };
+
   const handleSave = () => {
     const name = scenarioName.trim() || `Plan ${savedCount + 1}`;
     onSaveScenario(name);
@@ -60,21 +74,51 @@ const CalculationPanel: React.FC<Props> = ({ state, setState, onSaveScenario, on
       {/* Tab Navigation */}
       <div className="flex bg-slate-100 p-1 rounded-xl">
         {[
-          { id: CalculatorMode.BASIC_SAVINGS, icon: 'piggy-bank' },
-          { id: CalculatorMode.WEALTH_BUILDING, icon: 'chart-line' },
-          { id: CalculatorMode.LOAN_MANAGEMENT, icon: 'home' }
+          { id: CalculatorMode.BASIC_SAVINGS, icon: 'piggy-bank', label: 'Basic' },
+          { id: CalculatorMode.WEALTH_BUILDING, icon: 'chart-line', label: 'Wealth' },
+          { id: CalculatorMode.LOAN_MANAGEMENT, icon: 'home', label: 'Loan' }
         ].map(tab => (
           <button
             key={tab.id}
-            onClick={() => updateState('mode', tab.id)}
+            onClick={() => handleModeChange(tab.id)}
             className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
               state.mode === tab.id ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'
             }`}
           >
             <i className={`fas fa-${tab.icon} mr-2`}></i>
-            {tab.id.split('_')[0]}
+            {tab.label}
           </button>
         ))}
+      </div>
+
+      {/* Strategy Type Selector */}
+      <div className="space-y-2">
+        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Investment Strategy</label>
+        <select 
+          value={state.investmentType}
+          onChange={(e) => updateState('investmentType', e.target.value as InvestmentType)}
+          className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none"
+        >
+          {state.mode === CalculatorMode.WEALTH_BUILDING && (
+            <>
+              <option value={InvestmentType.SIP}>Regular SIP (+ Extra)</option>
+              <option value={InvestmentType.IRREGULAR_ONLY}>Irregular Injections Only</option>
+              <option value={InvestmentType.LUMPSUM_SIP}>Lump-sum + SIP</option>
+            </>
+          )}
+          {state.mode === CalculatorMode.BASIC_SAVINGS && (
+            <>
+              <option value={InvestmentType.COMPOUND}>Compound Interest</option>
+              <option value={InvestmentType.SIMPLE}>Simple Interest</option>
+            </>
+          )}
+          {state.mode === CalculatorMode.LOAN_MANAGEMENT && (
+            <>
+              <option value={InvestmentType.LOAN_PREPAYMENT}>Loan with Prepayments</option>
+              <option value={InvestmentType.LOAN_STANDARD}>Standard Amortization</option>
+            </>
+          )}
+        </select>
       </div>
 
       {/* Scenario Actions */}
@@ -170,7 +214,8 @@ const CalculationPanel: React.FC<Props> = ({ state, setState, onSaveScenario, on
           />
         </div>
 
-        {state.mode === CalculatorMode.WEALTH_BUILDING && (
+        {/* SIP UI - Strictly gated to Wealth Building mode */}
+        {state.mode === CalculatorMode.WEALTH_BUILDING && state.investmentType !== InvestmentType.IRREGULAR_ONLY && (
           <div>
             <div className="flex justify-between items-end mb-2">
               <label className="text-sm font-semibold text-slate-700">Monthly SIP</label>
@@ -194,7 +239,7 @@ const CalculationPanel: React.FC<Props> = ({ state, setState, onSaveScenario, on
         )}
       </section>
 
-      {/* Custom Injections Section */}
+      {/* Strategic Injections Section - Now visible in Basic Savings mode as well */}
       <section className="pt-6 border-t border-slate-100 space-y-4">
         <h4 className="text-xs font-bold text-slate-800 uppercase tracking-widest flex items-center">
           <i className="fas fa-layer-group text-blue-500 mr-2"></i>
@@ -209,7 +254,7 @@ const CalculationPanel: React.FC<Props> = ({ state, setState, onSaveScenario, on
               value={injAmount}
               onChange={(e) => setInjAmount(Number(e.target.value))}
               className="w-full px-3 py-2 bg-white border border-blue-100 rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-400 outline-none"
-              placeholder="e.g. 5000"
+              placeholder="e.g. 500"
             />
           </div>
           
@@ -245,7 +290,6 @@ const CalculationPanel: React.FC<Props> = ({ state, setState, onSaveScenario, on
           </button>
         </div>
 
-        {/* List of active injections */}
         <div className="space-y-2">
           {state.injectionRules.map((rule) => (
             <div key={rule.id} className="group flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100 shadow-sm hover:border-blue-200 transition-all">

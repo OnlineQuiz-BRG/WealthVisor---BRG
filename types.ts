@@ -10,7 +10,7 @@ export enum InvestmentType {
   COMPOUND = 'COMPOUND',
   SIP = 'SIP',
   LUMPSUM_SIP = 'LUMPSUM_SIP',
-  IRREGULAR_SIP = 'IRREGULAR_SIP',
+  IRREGULAR_ONLY = 'IRREGULAR_ONLY', // New: Only uses injection rules
   LOAN_STANDARD = 'LOAN_STANDARD',
   LOAN_PREPAYMENT = 'LOAN_PREPAYMENT'
 }
@@ -31,7 +31,9 @@ export interface InjectionRule {
 export interface AmortizationRow {
   month: number;
   openingBalance: number;
-  contribution: number;
+  baseContribution: number; // Regular SIP or EMI
+  ruleContribution: number; // Strategic Injections
+  contribution: number;     // Total sum
   interest: number;
   closingBalance: number;
   totalInvested: number;
