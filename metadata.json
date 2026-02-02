@@ -1,0 +1,5 @@
+{
+  "name": "WealthVisor",
+  "description": "A high-precision financial calculator for investment growth, SIP, and loan amortization with irregular repayment support, inflation adjustment, and tax modeling.",
+  "requestFramePermissions": []
+}
